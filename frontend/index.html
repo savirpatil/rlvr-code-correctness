@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RLVR vs SFT Code Arena</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #f0f6fc;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8b949e;
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .input-section {
+      max-width: 860px;
+      margin: 0 auto 32px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: #388bfd; }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #8b949e;
+      cursor: pointer;
+    }
+
+    button#run-btn {
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 24px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button#run-btn:hover  { background: #2ea043; }
+    button#run-btn:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-base  { background: #21262d; color: #8b949e; }
+    .badge-lora  { background: #1f3a5f; color: #79c0ff; }
+    .badge-rlvr  { background: #1a3a2a; color: #56d364; }
+
+    .score-bar {
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      border-bottom: 1px solid #21262d;
+      min-height: 38px;
+    }
+
+    .score-pass   { color: #56d364; }
+    .score-partial { color: #e3b341; }
+    .score-fail   { color: #f85149; }
+    .score-none   { color: #484f58; }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 220px;
+      color: #e6edf3;
+    }
+
+    .placeholder { color: #484f58; font-style: italic; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #30363d;
+      border-top-color: #388bfd;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg { color: #f85149; font-size: 0.85rem; margin-top: 8px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>RLVR vs SFT — Code Arena</h1>
+<p class="subtitle">Compare Base · LoRA SFT · RLVR (GRPO) on the same coding problem</p>
+
+<div class="input-section">
+  <label>Coding Problem / Prompt</label>
+  <textarea id="prompt" placeholder="Paste a HumanEval-style function signature, or describe a function in plain English...">from typing import List
+def has_close_elements(numbers: List[float], threshold: float) -> bool:
+    """ Check if in given list of numbers, any two are closer to each other than the threshold.
+    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
+    False
+    """</textarea>
+
+  <div class="controls">
+    <button id="run-btn" onclick="run()">▶ Run All Models</button>
+    <label class="toggle">
+      <input type="checkbox" id="chat-toggle" />
+      Natural language prompt (MBPP-style)
+    </label>
+    <span id="error-msg" class="error-msg"></span>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Base -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Base Model</span>
+      <span class="badge badge-base">Qwen2.5-Coder-1.5B</span>
+    </div>
+    <div class="score-bar" id="score-base"><span class="score-none">—</span></div>
+    <pre id="code-base"><span class="placeholder">Output will appear here...</span></pre>
+  </div>
+
+  <!-- LoRA SFT -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">LoRA SFT</span>
+      <span class="badge badge-lora">Supervised Fine-Tuning</span>
+    </div>
+    <div class="score-bar" id="score-lora"><span class="score-none">—</span></div>
+    <pre id="code-lora"><span class="placeholder">Output will appear here...</span></pre>
+  </div>
+
+  <!-- RLVR -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">RLVR (GRPO)</span>
+      <span class="badge badge-rlvr">Reinforcement Learning</span>
+    </div>
+    <div class="score-bar" id="score-rlvr"><span class="score-none">—</span></div>
+    <pre id="code-rlvr"><span class="placeholder">Output will appear here...</span></pre>
+  </div>
+</div>
+
+<script>
+  const API = "http://localhost:8000";
+
+  function setLoading(on) {
+    const btn = document.getElementById("run-btn");
+    btn.disabled = on;
+    btn.innerHTML = on
+      ? '<span class="spinner"></span>Running...'
+      : "▶ Run All Models";
+
+    ["base", "lora", "rlvr"].forEach(v => {
+      if (on) {
+        document.getElementById(`code-${v}`).innerHTML = '<span class="placeholder">Generating...</span>';
+        document.getElementById(`score-${v}`).innerHTML = '<span class="score-none">—</span>';
+      }
+    });
+  }
+
+  function renderScore(variant, score, reason) {
+    const el = document.getElementById(`score-${variant}`);
+    if (score === null) {
+      el.innerHTML = `<span class="score-none">No tests in prompt — ${reason}</span>`;
+      return;
+    }
+    const cls = score >= 1.0 ? "score-pass" : score > 0 ? "score-partial" : "score-fail";
+    const label = score >= 1.0 ? "✓ All tests pass" : score > 0 ? `⚠ Partial (${score.toFixed(2)})` : "✗ Failed";
+    el.innerHTML = `<span class="${cls}">${label} — ${reason}</span>`;
+  }
+
+  async function run() {
+    const prompt = document.getElementById("prompt").value.trim();
+    const useChatTemplate = document.getElementById("chat-toggle").checked;
+    const errEl = document.getElementById("error-msg");
+    errEl.textContent = "";
+
+    if (!prompt) { errEl.textContent = "Please enter a prompt."; return; }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, use_chat_template: useChatTemplate }),
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const data = await res.json();
+
+      ["base", "lora", "rlvr"].forEach(variant => {
+        const { code, score, reason } = data.results[variant];
+        document.getElementById(`code-${variant}`).textContent = code || "(empty response)";
+        renderScore(variant, score, reason);
+      });
+
+    } catch (err) {
+      errEl.textContent = `Error: ${err.message}. Is the API running on port 8000?`;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // allow Ctrl+Enter to submit
+  document.getElementById("prompt").addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) run();
+  });
+</script>
+
+</body>
+</html>
