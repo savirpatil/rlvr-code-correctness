@@ -6,3 +6,4 @@ results/*.csv
 wandb/
 .ipynb_checkpoints/
 models/outputs/
+.DS_Store
