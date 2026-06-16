@@ -7,3 +7,4 @@ wandb/
 .ipynb_checkpoints/
 models/outputs/
 .DS_Store
+.vscode/
