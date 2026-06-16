@@ -5,4 +5,4 @@ __pycache__/
 results/*.csv
 wandb/
 .ipynb_checkpoints/
-models/
+models/outputs/
