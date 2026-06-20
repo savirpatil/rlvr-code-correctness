@@ -103,7 +103,7 @@ def train(smoke: bool = False):
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.model_max_length = 1024
 
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.float16, device_map="auto")
+    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, dtype=torch.bfloat16, device_map="auto")
 
     dataset = get_training_data(smoke=smoke)
     print(f"Training samples: {len(dataset)}")
@@ -114,6 +114,7 @@ def train(smoke: bool = False):
     output_dir=OUTPUT_DIR,
     num_generations=4 if smoke else 4,
     max_completion_length=128 if smoke else 384,
+    temperature=0.8,
     max_steps=8 if smoke else 1000,
     per_device_train_batch_size=4 if smoke else 4,
     gradient_accumulation_steps=1 if smoke else 8,
@@ -124,6 +125,7 @@ def train(smoke: bool = False):
     beta=0.1,
     remove_unused_columns=False,
     gradient_checkpointing=True,
+    bf16=True,
     )
 
     trainer = GRPOTrainer(
