@@ -111,18 +111,19 @@ def train(smoke: bool = False):
     reward_fn = make_reward_fn(dataset)
 
     config = GRPOConfig(
-        output_dir=OUTPUT_DIR,
-        num_generations=4 if smoke else 8,
-        max_completion_length=128 if smoke else 512,
-        max_steps=8 if smoke else 1000,
-        per_device_train_batch_size=4 if smoke else 8,
-        gradient_accumulation_steps=1 if smoke else 4,
-        learning_rate=1e-5,
-        logging_steps=1 if smoke else 10,
-        save_steps=500,
-        report_to="none" if smoke else "wandb",
-        beta=0.1,
-        remove_unused_columns=False,
+    output_dir=OUTPUT_DIR,
+    num_generations=4 if smoke else 4,
+    max_completion_length=128 if smoke else 384,
+    max_steps=8 if smoke else 1000,
+    per_device_train_batch_size=4 if smoke else 4,
+    gradient_accumulation_steps=1 if smoke else 8,
+    learning_rate=1e-5,
+    logging_steps=1 if smoke else 10,
+    save_steps=500,
+    report_to="none" if smoke else "wandb",
+    beta=0.1,
+    remove_unused_columns=False,
+    gradient_checkpointing=True,
     )
 
     trainer = GRPOTrainer(
