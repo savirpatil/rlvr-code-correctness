@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import shutil
 import torch
 import wandb
 from datasets import load_dataset, concatenate_datasets
@@ -65,11 +66,6 @@ def clean_completion(completion: str, fn_name: str = None) -> str:
 
 # ── dataset prep ─────────────────────────────────────────────────────────────
 def get_training_data(smoke: bool = False):
-    """
-    GRPO only needs prompts — no labels. We attach test cases as metadata
-    so the reward function can execute them at training time to score each
-    generated completion.
-    """
     humaneval = load_dataset("openai_humaneval", split="test")
     mbpp      = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
 
@@ -113,11 +109,6 @@ def get_training_data(smoke: bool = False):
 
 # ── reward wrapper ────────────────────────────────────────────────────────────
 def make_reward_fn(dataset):
-    """
-    GRPOTrainer calls reward_fn(prompts, completions) -> List[float] after
-    each generation batch. We look up the expected function name per prompt
-    so clean_completion can reliably extract the right code block before scoring.
-    """
     prompt_to_tests = {ex["prompt"]: ex["tests"] for ex in dataset}
     prompt_to_fn = {}
     for ex in dataset:
@@ -144,6 +135,9 @@ def train(smoke: bool = False):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Device: {device}")
 
+    disk = shutil.disk_usage("/kaggle/working") if os.path.exists("/kaggle/working") else shutil.disk_usage(".")
+    print(f"Disk free: {disk.free / 1e9:.1f} GB")
+
     if not smoke:
         wandb.init(project=WANDB_PROJ, entity=WANDB_ENT, name="qwen2.5-coder-1.5b-rlvr-train")
 
@@ -168,7 +162,7 @@ def train(smoke: bool = False):
         gradient_accumulation_steps=1 if smoke else 2,
         learning_rate=1e-5,
         logging_steps=1 if smoke else 5,
-        save_steps=40,
+        save_strategy="no",
         report_to="none" if smoke else "wandb",
         beta=0.1,
         remove_unused_columns=False,
@@ -188,6 +182,12 @@ def train(smoke: bool = False):
         print("Smoke init complete — skipping train() on MPS (OOM by design, run on Kaggle)")
     else:
         trainer.train()
+
+        if os.path.exists(OUTPUT_DIR):
+            for ckpt in os.listdir(OUTPUT_DIR):
+                if ckpt.startswith("checkpoint-"):
+                    shutil.rmtree(os.path.join(OUTPUT_DIR, ckpt), ignore_errors=True)
+
         model.save_pretrained(OUTPUT_DIR)
         tokenizer.save_pretrained(OUTPUT_DIR)
         model.push_to_hub(f"{HF_USER}/qwen2.5-coder-1.5b-rlvr-code")
