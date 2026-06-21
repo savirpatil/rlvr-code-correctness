@@ -21,6 +21,48 @@ HF_USER    = os.getenv("HF_USERNAME",   "savirpatil")
 OUTPUT_DIR = "./outputs/rlvr-grpo"
 SMOKE      = False
 
+# ── completion cleaner ───────────────────────────────────────────────────────
+def clean_completion(completion: str, fn_name: str = None) -> str:
+    completion = re.sub(r"```python", "", completion)
+    completion = re.sub(r"```", "", completion)
+
+    if fn_name:
+        pattern = rf"def {re.escape(fn_name)}\("
+        matches = list(re.finditer(pattern, completion))
+        if matches:
+            start = matches[-1].start()
+            remainder = completion[start:]
+            lines = remainder.split("\n")
+            cutoff = len(lines)
+            for i, line in enumerate(lines[1:], start=1):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if not line.startswith(" ") and not line.startswith("\t"):
+                    cutoff = i
+                    break
+            return "\n".join(lines[:cutoff]).rstrip()
+
+    lines = completion.split("\n")
+    cutoff = len(lines)
+    for i, line in enumerate(lines):
+        if line.startswith("if __name__"):
+            cutoff = i
+            break
+    lines = lines[:cutoff]
+    final_cutoff = len(lines)
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped and not line.startswith(" ") and not line.startswith("\t"):
+            if not any(stripped.startswith(kw) for kw in (
+                "def ", "class ", "return", "#", "@", "from ", "import ",
+                "if ", "for ", "while ", "try", "with ", "raise", "pass",
+                "break", "continue", "else", "elif", "except", "finally", "yield"
+            )):
+                final_cutoff = i
+                break
+    return "\n".join(lines[:final_cutoff]).rstrip()
+
 # ── dataset prep ─────────────────────────────────────────────────────────────
 def get_training_data(smoke: bool = False):
     """
@@ -50,9 +92,10 @@ def get_training_data(smoke: bool = False):
                 fn_name = match.group(1)
                 break
         prompt = (
-            f"Write a Python function named `{fn_name}` that solves the following:\n"
             f"{ex['prompt']}\n"
-            f"Return ONLY the function definition. No explanation, no example usage, no markdown."
+            f"def {fn_name}(...):\n"
+            f"Complete this function. Output ONLY the code, starting directly with 'def {fn_name}'. "
+            f"Do not include explanations, markdown fences, or multiple versions."
         )
         return {
             "prompt":  prompt,
@@ -72,20 +115,25 @@ def get_training_data(smoke: bool = False):
 def make_reward_fn(dataset):
     """
     GRPOTrainer calls reward_fn(prompts, completions) -> List[float] after
-    each generation batch. We close over a prompt->tests lookup so we know
-    which test cases to run for each completion without storing them in the
-    model input.
+    each generation batch. We look up the expected function name per prompt
+    so clean_completion can reliably extract the right code block before scoring.
     """
     prompt_to_tests = {ex["prompt"]: ex["tests"] for ex in dataset}
+    prompt_to_fn = {}
+    for ex in dataset:
+        match = re.search(r"def (\w+)\(", ex["prompt"])
+        prompt_to_fn[ex["prompt"]] = match.group(1) if match else None
 
     def reward_fn(prompts, completions, **kwargs):
         scores = []
         for prompt, completion in zip(prompts, completions):
             tests = prompt_to_tests.get(prompt, [])
+            fn_name = prompt_to_fn.get(prompt)
             if not tests:
                 scores.append(-1.0)
                 continue
-            score, _ = compute_reward(completion, tests)
+            cleaned = clean_completion(completion, fn_name=fn_name)
+            score, _ = compute_reward(cleaned, tests)
             scores.append(score)
         return scores
 
@@ -111,21 +159,21 @@ def train(smoke: bool = False):
     reward_fn = make_reward_fn(dataset)
 
     config = GRPOConfig(
-    output_dir=OUTPUT_DIR,
-    num_generations=4 if smoke else 4,
-    max_completion_length=128 if smoke else 192,
-    temperature=0.8,
-    max_steps=8 if smoke else 80,
-    per_device_train_batch_size=4 if smoke else 4,
-    gradient_accumulation_steps=1 if smoke else 2,
-    learning_rate=1e-5,
-    logging_steps=1 if smoke else 5,
-    save_steps=40,
-    report_to="none" if smoke else "wandb",
-    beta=0.1,
-    remove_unused_columns=False,
-    gradient_checkpointing=True,
-    bf16=True,
+        output_dir=OUTPUT_DIR,
+        num_generations=4 if smoke else 4,
+        max_completion_length=128 if smoke else 192,
+        temperature=0.8,
+        max_steps=8 if smoke else 80,
+        per_device_train_batch_size=4 if smoke else 4,
+        gradient_accumulation_steps=1 if smoke else 2,
+        learning_rate=1e-5,
+        logging_steps=1 if smoke else 5,
+        save_steps=40,
+        report_to="none" if smoke else "wandb",
+        beta=0.1,
+        remove_unused_columns=False,
+        gradient_checkpointing=True,
+        bf16=True,
     )
 
     trainer = GRPOTrainer(

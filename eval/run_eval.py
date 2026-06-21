@@ -182,9 +182,10 @@ def main(run_name: str = "qwen2.5-coder-1.5b-base-eval", model_path: str = None)
                 fn_name = match.group(1)
                 break
         prompt = (
-            f"Write a Python function named `{fn_name}` that solves the following:\n"
             f"{ex['prompt']}\n"
-            f"Return ONLY the function definition. No explanation, no example usage, no markdown."
+            f"def {fn_name}(...):\n"
+            f"Complete this function. Output ONLY the code, starting directly with 'def {fn_name}'. "
+            f"Do not include explanations, markdown fences, or multiple versions."
         )
         return {
             "prompt":      prompt,

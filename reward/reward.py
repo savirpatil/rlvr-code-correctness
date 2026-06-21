@@ -23,11 +23,12 @@ def compute_reward(code: str, tests: List[str]) -> Tuple[float, str]:
       timeout                 → -0.5
       syntax/runtime error    → -1.0
     """
+    COMMON_IMPORTS = "import math\nimport re\nfrom typing import List, Dict, Tuple, Optional\n"
     if not code or not code.strip():
         return SCORE_ERROR, "empty completion"
 
     test_block = "\n".join(tests)
-    full_code  = code + "\n" + test_block
+    full_code = COMMON_IMPORTS + code + "\n" + test_block
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(full_code)
