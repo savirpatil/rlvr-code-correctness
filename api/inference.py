@@ -27,10 +27,6 @@ def get_device():
     return "cpu"
 
 def load_models():
-    """
-    Load all three model variants into memory. Called once at API startup.
-    Base and RLVR are full models; LoRA is the base with an adapter applied on top.
-    """
     global _models, _tokenizer, _device
     _device = get_device()
     print(f"Loading models on {_device}...")
@@ -39,24 +35,23 @@ def load_models():
     _tokenizer.pad_token = _tokenizer.eos_token
     _tokenizer.model_max_length = 1024
 
-    # base model
     print("Loading base model...")
     _models["base"] = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL_ID, dtype=torch.float16, device_map="auto"
-    ).eval()
+        BASE_MODEL_ID, dtype=torch.float16
+    ).to(_device).eval()
 
-    # LoRA model — load base then apply adapter weights
     print("Loading LoRA model...")
     _lora_base = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL_ID, dtype=torch.float16, device_map="auto"
+        BASE_MODEL_ID, dtype=torch.float16
     )
-    _models["lora"] = PeftModel.from_pretrained(_lora_base, LORA_MODEL_ID).eval()
+    _models["lora"] = PeftModel.from_pretrained(
+        _lora_base, LORA_MODEL_ID
+    ).to(_device).eval()
 
-    # RLVR model — fully fine-tuned, load directly
     print("Loading RLVR model...")
     _models["rlvr"] = AutoModelForCausalLM.from_pretrained(
-        RLVR_MODEL_ID, dtype=torch.float16, device_map="auto"
-    ).eval()
+        RLVR_MODEL_ID, dtype=torch.float16
+    ).to(_device).eval()
 
     print("All models loaded.")
 
@@ -86,19 +81,9 @@ def clean_completion(completion: str) -> str:
                 break
     return "\n".join(lines[:final_cutoff]).rstrip()
 
-def generate(
-    prompt: str,
-    variant: str,
-    use_chat_template: bool = False,
-    stream: bool = False,
-) -> str:
-    """
-    Generate a completion from one model variant.
-    variant must be one of: 'base', 'lora', 'rlvr'
-    use_chat_template=True for MBPP-style natural language prompts.
-    """
+def generate(prompt, variant, use_chat_template=False, stream=False):
     if variant not in _models:
-        raise ValueError(f"Unknown variant '{variant}'. Must be one of: {list(_models.keys())}")
+        raise ValueError(f"Unknown variant '{variant}'")
 
     model = _models[variant]
 

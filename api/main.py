@@ -50,35 +50,35 @@ def health():
 
 @app.post("/generate")
 async def generate_endpoint(req: GenerateRequest):
-    """
-    Run all three model variants on the prompt and return completions + reward scores.
-    This is the main endpoint the frontend calls for side-by-side comparison.
-    """
     loop = asyncio.get_event_loop()
-
-    # generate from all three variants (blocking, run in thread)
-    completions = await loop.run_in_executor(
-        None, lambda: generate_all(req.prompt, use_chat_template=req.use_chat_template)
-    )
-
-    # score each completion against any assert statements found in the prompt
-    # (for HumanEval-style prompts that include doctest examples)
-    test_lines = [
-        line.strip() for line in req.prompt.split("\n")
-        if line.strip().startswith("assert")
-    ]
-
+    
     results = {}
-    for variant, code in completions.items():
-        if test_lines:
-            score, reason = compute_reward(code, test_lines)
-        else:
-            score, reason = None, "no tests found in prompt"
-        results[variant] = {
-            "code":   code,
-            "score":  score,
-            "reason": reason,
-        }
+    for variant in ["base", "lora", "rlvr"]:
+        try:
+            code = await loop.run_in_executor(
+                None, lambda v=variant: generate(req.prompt, v, use_chat_template=req.use_chat_template)
+            )
+            test_lines = [
+                line.strip() for line in req.prompt.split("\n")
+                if line.strip().startswith("assert")
+            ]
+            if test_lines:
+                # close the docstring if prompt contains an unclosed one, then append completion
+                prefix = req.prompt.split("assert")[0].rstrip()
+                if prefix.count('"""') % 2 != 0:
+                    prefix += '\n    """\n'
+                full_code = prefix + code
+                print("=== FULL CODE SENT TO REWARD ===")
+                print(full_code)
+                print("=== TESTS ===")
+                print(test_lines)
+                score, reason = compute_reward(full_code, test_lines)
+            else:
+                score, reason = None, "no tests found in prompt"
+            results[variant] = {"code": code, "score": score, "reason": reason}
+        except Exception as e:
+            print(f"ERROR on variant {variant}: {e}")
+            results[variant] = {"code": f"Error: {str(e)}", "score": -1.0, "reason": str(e)}
 
     return {"results": results}
 
