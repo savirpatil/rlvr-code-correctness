@@ -84,6 +84,6 @@ def batch_reward(prompts: List[str], completions: List[str], test_sets: List[Lis
     """
     Interface expected by GRPOTrainer: takes parallel lists of prompts,
     completions, and test cases and returns a flat list of float scores.
-    prompts is passed through but unused — GRPO requires it in the signature.
+    prompts is passed through but unused - GRPO requires it in the signature.
     """
     return [compute_reward(code, tests)[0] for code, tests in zip(completions, test_sets)]

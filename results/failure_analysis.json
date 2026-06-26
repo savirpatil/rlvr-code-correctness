@@ -1,0 +1,142 @@
+[
+  {
+    "problem_id": 0,
+    "prompt": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in gi...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    for i in range(len(numbers)):\n        for j in range(i + 1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False",
+      "lora": "    for i in range(len(numbers)):\n        for j in range(i + 1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False",
+      "rlvr": "    for i in range(len(numbers)):\n        for j in range(i + 1, len(numbers)):\n            if abs(numbers[i] - numbers[j]) < threshold:\n                return True\n    return False"
+    }
+  },
+  {
+    "problem_id": 1,
+    "prompt": "from typing import List\n\n\ndef separate_paren_groups(paren_string: str) -> List[str]:\n    \"\"\" Input to this function is a...",
+    "scores": {
+      "base": 1.0,
+      "lora": -1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    result = []\n    current_group = ''\n    depth = 0\n\n    for char in paren_string.replace(' ', ''):\n\n        if char == '(':\n            depth += 1\n            current_group += char\n        elif char == ')':\n            depth -= 1\n            current_group += char\n\n            if depth == 0:\n                result.append(current_group)\n                current_group = ''\n\n    return result",
+      "lora": "    if paren_string == '':\n        return []\n    stack = []\n    res = []\n    for i, c in enumerate(paren_string):\n        if c == '(':\n            stack.append(i)\n        elif c == ')':\n            start = stack.pop()\n            if len(stack) == 0:\n                res.append(paren_string[start + 1:i])\n    return res",
+      "rlvr": "    result = []\n    current_group = ''\n    depth = 0\n\n    for char in paren_string.replace(' ', ''):\n\n        if char == '(':\n            depth += 1\n            current_group += char\n        elif char == ')':\n            depth -= 1\n            current_group += char\n\n            if depth == 0:\n                result.append(current_group)\n                current_group = ''\n\n    return result"
+    }
+  },
+  {
+    "problem_id": 2,
+    "prompt": "\n\ndef truncate_number(number: float) -> float:\n    \"\"\" Given a positive floating point number, it can be decomposed into...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    return number - int(number)\n\n# Check function to verify the correctness of the solution",
+      "lora": "    return number - int(number)",
+      "rlvr": "    return number - int(number)\n\n# Check function to verify the correctness of the solution"
+    }
+  },
+  {
+    "problem_id": 3,
+    "prompt": "from typing import List\n\n\ndef below_zero(operations: List[int]) -> bool:\n    \"\"\" You're given a list of deposit and with...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    balance = 0\n    for op in operations:\n        balance += op\n        if balance < 0:\n            return True\n    return False",
+      "lora": "    balance = 0\n    for op in operations:\n        balance += op\n        if balance < 0:\n            return True\n    return False",
+      "rlvr": "    balance = 0\n    for op in operations:\n        balance += op\n        if balance < 0:\n            return True\n    return False"
+    }
+  },
+  {
+    "problem_id": 4,
+    "prompt": "from typing import List\n\n\ndef mean_absolute_deviation(numbers: List[float]) -> float:\n    \"\"\" For a given list of input ...",
+    "scores": {
+      "base": -1.0,
+      "lora": 1.0,
+      "rlvr": -1.0
+    },
+    "completions": {
+      "base": "    return sum(abs(x - mean(numbers)) for x in numbers) / len(numbers)",
+      "lora": "    return sum(abs(x - sum(numbers) / len(numbers)) for x in numbers) / len(numbers)",
+      "rlvr": "    return sum(abs(x - mean(numbers)) for x in numbers) / len(numbers)"
+    }
+  },
+  {
+    "problem_id": 5,
+    "prompt": "from typing import List\n\n\ndef intersperse(numbers: List[int], delimeter: int) -> List[int]:\n    \"\"\" Insert a number 'del...",
+    "scores": {
+      "base": -1.0,
+      "lora": -1.0,
+      "rlvr": -1.0
+    },
+    "completions": {
+      "base": "    return [numbers[i] for i in range(len(numbers)) if i % 2 == 0] + [delimeter] + [numbers[i] for i in range(len(numbers)) if i % 2 != 0]",
+      "lora": "    return numbers if not numbers else [numbers[0]] + [delimeter] + intersperse(numbers[1:], delimeter)",
+      "rlvr": "    return numbers if not numbers else [numbers[0]] + [delimeter] + intersperse(numbers[1:], delimeter)"
+    }
+  },
+  {
+    "problem_id": 6,
+    "prompt": "from typing import List\n\n\ndef parse_nested_parens(paren_string: str) -> List[int]:\n    \"\"\" Input to this function is a s...",
+    "scores": {
+      "base": -1.0,
+      "lora": 1.0,
+      "rlvr": -1.0
+    },
+    "completions": {
+      "base": "    result = []\n    max_depth = 0\n    current_depth = 0\n\n    for char in paren_string:\n        if char == '(':\n            current_depth += 1\n            if current_depth > max_depth:\n                max_depth = current_depth\n        elif char == ')':\n            current_depth -= 1\n\n        # If we encounter an empty group, add the max depth to the result list and reset the variables\n        if not char and current_depth == 0:\n            result.append(max_depth)\n            max_depth = 0\n            current_depth = 0\n\n    return result",
+      "lora": "    result = []\n    for paren in paren_string.split():\n        max_level = 0\n        current_level = 0\n        for char in paren:\n            if char == '(':\n                current_level += 1\n                if current_level > max_level:\n                    max_level = current_level\n            elif char == ')':\n                current_level -= 1\n        result.append(max_level)\n    return result",
+      "rlvr": "    result = []\n    max_depth = 0\n    for char in paren_string:\n        if char == '(':\n            max_depth += 1\n            result.append(max_depth)\n        elif char == ')':\n            max_depth -= 1\n\n    return result"
+    }
+  },
+  {
+    "problem_id": 7,
+    "prompt": "from typing import List\n\n\ndef filter_by_substring(strings: List[str], substring: str) -> List[str]:\n    \"\"\" Filter an in...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    return [s for s in strings if substring in s]",
+      "lora": "    return [s for s in strings if substring in s]",
+      "rlvr": "    return [s for s in strings if substring in s]"
+    }
+  },
+  {
+    "problem_id": 8,
+    "prompt": "from typing import List, Tuple\n\n\ndef sum_product(numbers: List[int]) -> Tuple[int, int]:\n    \"\"\" For a given list of int...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    if not numbers:\n        return 0, 1\n    total_sum = sum(numbers)\n    total_product = 1\n    for num in numbers:\n        total_product *= num\n    return total_sum, total_product",
+      "lora": "    if not numbers:\n        return (0, 1)\n\n    total_sum = sum(numbers)\n    total_product = 1\n    for num in numbers:\n        total_product *= num\n\n    return (total_sum, total_product)",
+      "rlvr": "    if not numbers:\n        return 0, 1\n    total_sum = sum(numbers)\n    total_product = 1\n    for num in numbers:\n        total_product *= num\n    return total_sum, total_product"
+    }
+  },
+  {
+    "problem_id": 9,
+    "prompt": "from typing import List, Tuple\n\n\ndef rolling_max(numbers: List[int]) -> List[int]:\n    \"\"\" From a given list of integers...",
+    "scores": {
+      "base": 1.0,
+      "lora": 1.0,
+      "rlvr": 1.0
+    },
+    "completions": {
+      "base": "    if not numbers:\n        return []\n    \n    max_so_far = numbers[0]\n    result = [max_so_far]\n\n    for num in numbers[1:]:\n        if num > max_so_far:\n            max_so_far = num\n        result.append(max_so_far)\n\n    return result",
+      "lora": "    return [max(numbers[:i + 1]) for i in range(len(numbers))]",
+      "rlvr": "    if not numbers:\n        return []\n    \n    max_so_far = numbers[0]\n    result = [max_so_far]\n\n    for num in numbers[1:]:\n        if num > max_so_far:\n            max_so_far = num\n        result.append(max_so_far)\n\n    return result"
+    }
+  }
+]
